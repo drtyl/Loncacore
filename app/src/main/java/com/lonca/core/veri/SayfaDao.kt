@@ -17,6 +17,9 @@ interface SayfaDao {
     @Insert
     suspend fun ekle(sayfa: Sayfa): Long
 
+    @Query("UPDATE sayfalar SET girisDosyaYolu = :girisDosyaYolu WHERE id = :id")
+    suspend fun girisDosyasiniGuncelle(id: Long, girisDosyaYolu: String)
+
     @Delete
     suspend fun sil(sayfa: Sayfa)
 }

@@ -10,8 +10,8 @@ import com.lonca.core.veri.LoncaVeritabani
 
 /**
  * Tek Activity — gerisi Jetpack Compose navigasyonuyla (LoncaNavHost)
- * yönetiliyor. Faz 3: Laboratuvar artık kalıcı (Room) — buradan tek bir
- * veritabanı örneği oluşturup tüm ekranlara geçiriyoruz.
+ * yönetiliyor. Faz 4: gerçek dosya/klasör sistemi — tek bir veritabanı
+ * örneği oluşturup hem SayfaDao hem DosyaDao'yu tüm ekranlara geçiriyoruz.
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,7 +22,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LoncaCoreTheme {
-                LoncaNavHost(sayfaDao = veritabani.sayfaDao())
+                LoncaNavHost(
+                    sayfaDao = veritabani.sayfaDao(),
+                    dosyaDao = veritabani.dosyaDao()
+                )
             }
         }
     }

@@ -1,0 +1,3 @@
+# Keystore ikili bir dosya — git'in satır sonu dönüşümü/metin olarak
+# işlemesi anahtarı bozup sessizce farklı bir imzaya yol açabilir.
+*.keystore binary

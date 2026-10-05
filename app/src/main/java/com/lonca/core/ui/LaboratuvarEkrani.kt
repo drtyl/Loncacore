@@ -1,19 +1,16 @@
 package com.lonca.core.ui
 
-import android.webkit.WebView
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,30 +27,49 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.lonca.core.kumhavuzu.ORNEK_BASLANGIC_KODU
-import com.lonca.core.kumhavuzu.kumHavuzuWebViewOlustur
-import com.lonca.core.ui.theme.LoncaMetinSoluk
+import com.lonca.core.kumhavuzu.ORNEK_INDEX_HTML
+import com.lonca.core.veri.Dosya
+import com.lonca.core.veri.DosyaDao
 import com.lonca.core.veri.Sayfa
 import com.lonca.core.veri.SayfaDao
+import com.lonca.core.zip.zipIceAktar
 import kotlinx.coroutines.launch
 
 /**
- * Faz 3 — kod editörü artık kalıcı: bir ad ver, "Sisteme Ekle" ile
- * Dünya'ya gerçekten eklenir (Room veritabanına yazılır).
+ * Faz 4 — Laboratuvar artık sadece bir giriş noktası: boş bir proje
+ * oluştur (gerçek dosya ağacıyla, Proje Düzenleyici'ye geçer) ya da bir
+ * zip içe aktar (eski Lonca gibi çok dosyalı projeler dahil).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LaboratuvarEkrani(sayfaDao: SayfaDao, onGeri: () -> Unit) {
+fun LaboratuvarEkrani(
+    sayfaDao: SayfaDao,
+    dosyaDao: DosyaDao,
+    onGeri: () -> Unit,
+    onProjeyeGit: (Long) -> Unit
+) {
     var isimMetni by remember { mutableStateOf("") }
-    var kodMetni by remember { mutableStateOf(ORNEK_BASLANGIC_KODU) }
-    var webViewReferansi by remember { mutableStateOf<WebView?>(null) }
+    var durumMetni by remember { mutableStateOf<String?>(null) }
     val kapsam = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val zipSeciciBaslat = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            val ad = isimMetni.trim().ifEmpty { "İçe Aktarılan Proje" }
+            durumMetni = "İçe aktarılıyor..."
+            kapsam.launch {
+                try {
+                    val yeniId = zipIceAktar(context, uri, ad, sayfaDao, dosyaDao)
+                    durumMetni = null
+                    onProjeyeGit(yeniId)
+                } catch (hata: Exception) {
+                    durumMetni = "İçe aktarılamadı: ${hata.message}"
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -67,87 +83,62 @@ fun LaboratuvarEkrani(sayfaDao: SayfaDao, onGeri: () -> Unit) {
             )
         }
     ) { icPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(icPadding)) {
+        Column(modifier = Modifier.fillMaxSize().padding(icPadding).padding(16.dp)) {
+            Text(
+                text = "Yeni, boş bir proje oluştur ya da bir zip içe aktar (birden fazla dosya ve resim içerebilir).",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = isimMetni,
                 onValueChange = { isimMetni = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                label = { Text("Sayfa adı") },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Proje adı") },
                 singleLine = true
             )
 
-            OutlinedTextField(
-                value = kodMetni,
-                onValueChange = { kodMetni = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.36f)
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                label = { Text("HTML / CSS / JS") },
-                textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrect = false)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = {
-                        webViewReferansi?.loadDataWithBaseURL(null, kodMetni, "text/html", "UTF-8", null)
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                    Text("  Çalıştır")
-                }
-
-                Button(
-                    onClick = {
-                        val ad = isimMetni.trim()
-                        if (ad.isNotEmpty()) {
-                            kapsam.launch {
-                                sayfaDao.ekle(Sayfa(isim = ad, icerik = kodMetni))
-                                onGeri()
-                            }
+            Button(
+                onClick = {
+                    val ad = isimMetni.trim()
+                    if (ad.isNotEmpty()) {
+                        kapsam.launch {
+                            val yeniId = sayfaDao.ekle(Sayfa(isim = ad, girisDosyaYolu = "index.html"))
+                            dosyaDao.ekle(
+                                Dosya(
+                                    sayfaId = yeniId,
+                                    yol = "index.html",
+                                    icerikTuru = "metin",
+                                    icerikMetin = ORNEK_INDEX_HTML,
+                                    boyut = ORNEK_INDEX_HTML.length.toLong()
+                                )
+                            )
+                            onProjeyeGit(yeniId)
                         }
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Sisteme Ekle")
-                }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Boş Proje Oluştur")
             }
 
-            Text(
-                text = "Önizleme (kum havuzu — izole çalışır)",
-                style = MaterialTheme.typography.bodySmall,
-                color = LoncaMetinSoluk,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.46f)
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            Button(
+                onClick = { zipSeciciBaslat.launch("application/zip") },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                AndroidView(
-                    factory = { context ->
-                        kumHavuzuWebViewOlustur(context).also { webView ->
-                            webViewReferansi = webView
-                            webView.loadDataWithBaseURL(null, kodMetni, "text/html", "UTF-8", null)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+                Text("Zip'ten İçe Aktar")
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            val suAnkiDurum = durumMetni
+            if (suAnkiDurum != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(suAnkiDurum, style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }

@@ -20,21 +20,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.lonca.core.kumhavuzu.kumHavuzuWebViewOlustur
+import com.lonca.core.kumhavuzu.sayfaIkiliKlasoru
+import com.lonca.core.kumhavuzu.sayfayiWebVieweYukle
+import com.lonca.core.veri.DosyaDao
 import com.lonca.core.veri.Sayfa
 import com.lonca.core.veri.SayfaDao
 import kotlinx.coroutines.launch
 
 /**
- * Bir sayfayı "çalıştırır" — kaydedilmiş içeriği kum havuzunda (WebView)
- * gösterir. Üstteki çöp kutusu sayfayı kalıcı olarak siler.
+ * Bir projeyi "çalıştırır" — kaydedilmiş dosya ağacını, gerçek yollarıyla
+ * (kum havuzunun sahte sunucusu üzerinden) gösterir. Üstteki çöp kutusu
+ * projeyi (hem Room kayıtlarını hem cihazdaki ikili dosyalarını) siler.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SayfaGoruntuleEkrani(sayfaId: Long, sayfaDao: SayfaDao, onGeri: () -> Unit) {
+fun SayfaGoruntuleEkrani(sayfaId: Long, sayfaDao: SayfaDao, dosyaDao: DosyaDao, onGeri: () -> Unit) {
     var sayfa by remember { mutableStateOf<Sayfa?>(null) }
     val kapsam = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(sayfaId) {
         sayfa = sayfaDao.idIleGetir(sayfaId)
@@ -56,6 +62,8 @@ fun SayfaGoruntuleEkrani(sayfaId: Long, sayfaDao: SayfaDao, onGeri: () -> Unit) 
                         val silinecek = mevcutSayfa
                         if (silinecek != null) {
                             kapsam.launch {
+                                dosyaDao.sayfayaGoreSilHepsi(silinecek.id)
+                                sayfaIkiliKlasoru(context, silinecek.id).deleteRecursively()
                                 sayfaDao.sil(silinecek)
                                 onGeri()
                             }
@@ -70,9 +78,9 @@ fun SayfaGoruntuleEkrani(sayfaId: Long, sayfaDao: SayfaDao, onGeri: () -> Unit) 
         Box(modifier = Modifier.fillMaxSize().padding(icPadding)) {
             if (mevcutSayfa != null) {
                 AndroidView(
-                    factory = { context ->
-                        kumHavuzuWebViewOlustur(context).apply {
-                            loadDataWithBaseURL(null, mevcutSayfa.icerik, "text/html", "UTF-8", null)
+                    factory = { ctx ->
+                        kumHavuzuWebViewOlustur(ctx).also { webView ->
+                            sayfayiWebVieweYukle(webView, mevcutSayfa.id, mevcutSayfa.girisDosyaYolu, ctx, dosyaDao)
                         }
                     },
                     modifier = Modifier.fillMaxSize()

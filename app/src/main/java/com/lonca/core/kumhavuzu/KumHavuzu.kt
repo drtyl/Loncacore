@@ -1,25 +1,28 @@
 package com.lonca.core.kumhavuzu
 
 import android.content.Context
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.lonca.core.veri.DosyaDao
 
 /**
- * Kum havuzu — Laboratuvar'da yazılan HTML/CSS/JS'in çalıştığı izole alan.
+ * Kum havuzu — Laboratuvar'da yazılan projelerin çalıştığı izole alan.
  *
  * Güvenlik ilkeleri (Mimari Vizyon Raporu, Bölüm 5 ile aynı):
- * - Bu WebView'a SADECE kullanıcının kendi yazdığı, yerel içerik yüklenir
- *   (loadDataWithBaseURL ile, taban adres YOK) — hiçbir zaman internetten
- *   bir sayfa açmaz, bu yüzden dışarıdan enjeksiyon riski yok.
- * - allowFileAccess ve allowContentAccess kapalı — cihazın dosyalarına
- *   dokunamaz.
- * - Native tarafla TEK bağlantısı, "lonca" adında dar kapsamlı bir mesaj
- *   köprüsü (WebMessageListener) — eski, riskli addJavascriptInterface
- *   yöntemi BİLEREK kullanılmıyor.
+ * - WebView'a SADECE SayfaDosyaIsleyici üzerinden, cihazın kendi
+ *   Room/dosya deposundan gelen içerik sunulur — hiçbir zaman gerçek
+ *   internete çıkmaz.
+ * - allowFileAccess ve allowContentAccess kapalı — cihazın gerçek
+ *   dosyalarına (bizim kendi "sahte sunucu"muz dışında) dokunamaz.
+ * - Native tarafla TEK ek bağlantısı, "lonca" adında dar kapsamlı bir
+ *   mesaj köprüsü (WebMessageListener) — eski, riskli
+ *   addJavascriptInterface yöntemi BİLEREK kullanılmıyor.
  * - Faz 2'de köprü sadece basit bir "aldım" yanıtı veriyor; gerçek
- *   yetenekler (dil desteği, izinli eylemler) sonraki fazlarda, hep bu
- *   aynı dar kapıdan eklenecek.
+ *   yetenekler sonraki fazlarda buraya eklenecek.
  */
 fun kumHavuzuWebViewOlustur(context: Context): WebView {
     val webView = WebView(context)
@@ -38,8 +41,6 @@ fun kumHavuzuWebViewOlustur(context: Context): WebView {
             setOf("*")
         ) { _, message, _, _, replyProxy ->
             val gelenMesaj = message.data ?: ""
-            // Faz 2: sadece kanıt amaçlı basit bir yanıt. Gerçek istek
-            // türleri (örn. "dil_uret") sonraki fazlarda buraya eklenecek.
             replyProxy.postMessage("Kabuk şunu aldı: $gelenMesaj")
         }
     }
@@ -48,10 +49,22 @@ fun kumHavuzuWebViewOlustur(context: Context): WebView {
 }
 
 /**
- * Laboratuvar'da yazılmaya başlanacak örnek, çok yalın bir sayfa —
- * mesaj köprüsünü de gösteriyor.
+ * Bir WebView'ı, belirli bir projenin (sayfaId) dosyalarını sunacak
+ * şekilde bağlar ve giriş dosyasını yükler. kumHavuzuWebViewOlustur ile
+ * birlikte kullanılır.
  */
-const val ORNEK_BASLANGIC_KODU = """<!DOCTYPE html>
+fun sayfayiWebVieweYukle(webView: WebView, sayfaId: Long, girisDosyaYolu: String, context: Context, dosyaDao: DosyaDao) {
+    val assetLoader = sayfaIcinAssetLoaderOlustur(sayfaId, context, dosyaDao)
+    webView.webViewClient = object : WebViewClient() {
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+            return assetLoader.shouldInterceptRequest(request.url)
+        }
+    }
+    webView.loadUrl(sayfaCalistirmaAdresi(girisDosyaYolu))
+}
+
+/** Yeni bir proje için çok yalın bir başlangıç — "index.html" dosyasının içeriği. */
+const val ORNEK_INDEX_HTML = """<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -62,7 +75,7 @@ const val ORNEK_BASLANGIC_KODU = """<!DOCTYPE html>
 </head>
 <body>
   <h2>Merhaba, Laboratuvar!</h2>
-  <p>Burayı değiştirip tekrar Çalıştır'a basabilirsin.</p>
+  <p>Bu projeye "+ Dosya" ile yeni dosyalar ekleyebilir, zip'ten içe aktarabilirsin.</p>
   <button onclick="dene()">Köprüyü Dene</button>
   <p id="sonuc"></p>
   <script>
