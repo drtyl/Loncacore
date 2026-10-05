@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.LoncaCore" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/lonca_arkaplan</item>
+        <item name="android:windowBackground">@color/lonca_arkaplan</item>
+    </style>
+</resources>
