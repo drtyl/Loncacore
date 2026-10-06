@@ -13,8 +13,8 @@ android {
         applicationId = "com.lonca.core"
         minSdk = 29
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4-faz4"
+        versionCode = 5
+        versionName = "0.5-faz5"
     }
 
     buildFeatures {

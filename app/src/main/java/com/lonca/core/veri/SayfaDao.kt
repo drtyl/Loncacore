@@ -20,6 +20,9 @@ interface SayfaDao {
     @Query("UPDATE sayfalar SET girisDosyaYolu = :girisDosyaYolu WHERE id = :id")
     suspend fun girisDosyasiniGuncelle(id: Long, girisDosyaYolu: String)
 
+    @Query("UPDATE sayfalar SET agIzniVar = :agIzniVar WHERE id = :id")
+    suspend fun agIzniniGuncelle(id: Long, agIzniVar: Boolean)
+
     @Delete
     suspend fun sil(sayfa: Sayfa)
 }

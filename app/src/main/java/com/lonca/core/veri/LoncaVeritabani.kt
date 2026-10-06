@@ -6,13 +6,13 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 /**
- * Faz 4: gerçek dosya/klasör sistemi eklendi (Dosya tablosu), Sayfa'nın
- * şeması değişti. Henüz erken geliştirme aşamasında olduğumuz için
- * (gerçek kullanıcı verisi riske girmiyor) elle bir göç yazmak yerine
- * fallbackToDestructiveMigration kullanıyoruz — bu güncellemeyle daha
- * önce kaydettiğin sayfalar silinecek.
+ * Faz 4: gerçek dosya/klasör sistemi eklendi (Dosya tablosu).
+ * Faz 5: izin sistemi (Sayfa.agIzniVar) eklendi. Henüz erken geliştirme
+ * aşamasında olduğumuz için (gerçek kullanıcı verisi riske girmiyor)
+ * elle bir göç yazmak yerine fallbackToDestructiveMigration kullanıyoruz
+ * — bu güncellemeyle daha önce kaydettiğin sayfalar silinecek.
  */
-@Database(entities = [Sayfa::class, Dosya::class], version = 3, exportSchema = false)
+@Database(entities = [Sayfa::class, Dosya::class], version = 4, exportSchema = false)
 abstract class LoncaVeritabani : RoomDatabase() {
     abstract fun sayfaDao(): SayfaDao
     abstract fun dosyaDao(): DosyaDao

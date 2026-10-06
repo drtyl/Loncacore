@@ -3,7 +3,9 @@ package com.lonca.core.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -51,6 +54,7 @@ fun LaboratuvarEkrani(
     onProjeyeGit: (Long) -> Unit
 ) {
     var isimMetni by remember { mutableStateOf("") }
+    var agIzniVar by remember { mutableStateOf(false) }
     var durumMetni by remember { mutableStateOf<String?>(null) }
     val kapsam = rememberCoroutineScope()
     val context = LocalContext.current
@@ -99,6 +103,16 @@ fun LaboratuvarEkrani(
                 singleLine = true
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("İnternete erişsin mi?")
+                Switch(checked = agIzniVar, onCheckedChange = { agIzniVar = it })
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
@@ -106,7 +120,7 @@ fun LaboratuvarEkrani(
                     val ad = isimMetni.trim()
                     if (ad.isNotEmpty()) {
                         kapsam.launch {
-                            val yeniId = sayfaDao.ekle(Sayfa(isim = ad, girisDosyaYolu = "index.html"))
+                            val yeniId = sayfaDao.ekle(Sayfa(isim = ad, girisDosyaYolu = "index.html", agIzniVar = agIzniVar))
                             dosyaDao.ekle(
                                 Dosya(
                                     sayfaId = yeniId,

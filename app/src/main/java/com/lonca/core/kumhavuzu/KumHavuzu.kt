@@ -24,7 +24,7 @@ import com.lonca.core.veri.DosyaDao
  * - Faz 2'de köprü sadece basit bir "aldım" yanıtı veriyor; gerçek
  *   yetenekler sonraki fazlarda buraya eklenecek.
  */
-fun kumHavuzuWebViewOlustur(context: Context): WebView {
+fun kumHavuzuWebViewOlustur(context: Context, agIzniVar: Boolean = false): WebView {
     val webView = WebView(context)
 
     webView.settings.apply {
@@ -32,6 +32,11 @@ fun kumHavuzuWebViewOlustur(context: Context): WebView {
         domStorageEnabled = false
         allowFileAccess = false
         allowContentAccess = false
+        // Faz 5 — izin sistemi: proje açıkça izinli olmadıkça (agIzniVar)
+        // gerçek internete HİÇ çıkamaz. Projenin kendi dosyaları (HTML/CSS/
+        // JS/resim) bu ayardan etkilenmiyor çünkü onlar hiç ağa çıkmıyor —
+        // SayfaDosyaIsleyici tarafından doğrudan cihazdan sunuluyor.
+        blockNetworkLoads = !agIzniVar
     }
 
     if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {

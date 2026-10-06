@@ -13,5 +13,8 @@ data class Sayfa(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val isim: String,
     val girisDosyaYolu: String = "index.html",
+    /** Faz 5 — izin sistemi. Varsayılan KAPALI: bir proje, sen açıkça izin
+        vermeden internete hiç çıkamaz (bkz. kumhavuzu/KumHavuzu.kt). */
+    val agIzniVar: Boolean = false,
     val olusturmaTarihi: Long = System.currentTimeMillis()
 )

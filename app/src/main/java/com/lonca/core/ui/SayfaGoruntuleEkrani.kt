@@ -79,7 +79,7 @@ fun SayfaGoruntuleEkrani(sayfaId: Long, sayfaDao: SayfaDao, dosyaDao: DosyaDao, 
             if (mevcutSayfa != null) {
                 AndroidView(
                     factory = { ctx ->
-                        kumHavuzuWebViewOlustur(ctx).also { webView ->
+                        kumHavuzuWebViewOlustur(ctx, mevcutSayfa.agIzniVar).also { webView ->
                             sayfayiWebVieweYukle(webView, mevcutSayfa.id, mevcutSayfa.girisDosyaYolu, ctx, dosyaDao)
                         }
                     },

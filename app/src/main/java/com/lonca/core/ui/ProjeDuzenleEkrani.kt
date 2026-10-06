@@ -20,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -59,10 +60,14 @@ fun ProjeDuzenleEkrani(
     var yeniDosyaYolu by remember { mutableStateOf("") }
     var onizlemeAcik by remember { mutableStateOf(false) }
     var girisDosyaYolu by remember { mutableStateOf("index.html") }
+    var agIzniVar by remember { mutableStateOf(false) }
     val kapsam = rememberCoroutineScope()
 
     LaunchedEffect(sayfaId) {
-        sayfaDao.idIleGetir(sayfaId)?.let { girisDosyaYolu = it.girisDosyaYolu }
+        sayfaDao.idIleGetir(sayfaId)?.let {
+            girisDosyaYolu = it.girisDosyaYolu
+            agIzniVar = it.agIzniVar
+        }
     }
 
     Scaffold(
@@ -88,7 +93,7 @@ fun ProjeDuzenleEkrani(
             Box(modifier = Modifier.fillMaxSize().padding(icPadding)) {
                 AndroidView(
                     factory = { ctx ->
-                        kumHavuzuWebViewOlustur(ctx).also { webView ->
+                        kumHavuzuWebViewOlustur(ctx, agIzniVar).also { webView ->
                             sayfayiWebVieweYukle(webView, sayfaId, girisDosyaYolu, ctx, dosyaDao)
                         }
                     },
@@ -97,6 +102,19 @@ fun ProjeDuzenleEkrani(
             }
         } else {
             Column(modifier = Modifier.fillMaxSize().padding(icPadding)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("İnternete erişsin mi?", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = agIzniVar,
+                        onCheckedChange = { yeniDeger ->
+                            agIzniVar = yeniDeger
+                            kapsam.launch { sayfaDao.agIzniniGuncelle(sayfaId, yeniDeger) }
+                        }
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
